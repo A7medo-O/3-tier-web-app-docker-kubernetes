@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: my-backend:local        # or your Docker Hub image
+          ports:
+            - containerPort: 8000
+          # Mount the secret inside /run/secrets so Go can read /run/secrets/db-password
+          volumeMounts:
+            - name: backend-secret-vol
+              mountPath: /run/secrets
+              readOnly: true
+          env:
+            - name: DB_HOST
+              value: mysql-service                  # matches the MySQL service name
+      volumes:
+        - name: backend-secret-vol
+          secret:
+            secretName: backend-secret   # must match your secret name
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: NodePort
+
